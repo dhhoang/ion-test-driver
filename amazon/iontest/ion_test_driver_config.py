@@ -17,6 +17,9 @@ Provides the build logic for Ion resources required by the ion_test_driver.
 """
 
 import os
+import sys
+import distutils
+from distutils import dir_util
 
 from amazon.iontest.ion_test_driver_util import IonBuild, NO_OP_BUILD, log_call
 
@@ -30,14 +33,22 @@ TOOL_DEPENDENCIES = {
     'git': 'git'
 }
 
+win_os = sys.platform.startswith('win')
 
 def install_ion_c(log):
     log_call(log, (TOOL_DEPENDENCIES['cmake'], '-DCMAKE_BUILD_TYPE=Debug'))
     log_call(log, (TOOL_DEPENDENCIES['cmake'], '--build', '.'))
-
+    if win_os:
+        build_dir = os.path.join(os.getcwd(), 'tools', 'cli')
+        copy_cli = 'xcopy %s %s /y' % (os.path.join(build_dir, 'Debug'), build_dir)
+        copy_docopt = 'xcopy %s %s /y' % (os.path.join(build_dir, 'docopt', 'Debug'), build_dir)
+        print(copy_cli)
+        log_call(log, copy_cli)
+        print(copy_docopt)
+        log_call(log, copy_docopt)
 
 ION_BUILDS = {
-    'ion-c': IonBuild(install_ion_c, os.path.join('tools', 'cli', 'ion')),
+    'ion-c': IonBuild(install_ion_c, os.path.join('tools', 'cli', 'ion.exe' if win_os else 'ion')),
     'ion-tests': NO_OP_BUILD,
     # TODO add more implementations here
 }

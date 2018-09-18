@@ -18,6 +18,7 @@ ion_test_driver utilities.
 
 import os
 import sys
+import shutil
 from subprocess import check_call
 
 COMMAND_SHELL = False
@@ -35,6 +36,27 @@ def log_call(log, args):
     finally:
         log_file.close()
 
+
+def rmtree_onerror(func, path, exc_info):
+    """
+    Error handler for ``shutil.rmtree``.
+    Try to set permission for the file/dir being removed.
+    """
+
+    import stat
+    if not os.access(path, os.W_OK):
+        # Is the error an access error ?
+        os.chmod(path, stat.S_IWUSR)
+        func(path)
+    else:
+        raise exc_info.value
+
+
+def rm_tree(path):
+    """
+    Wrapper for `shutil.rmtree()` to handle permission error.
+    """
+    shutil.rmtree(path, onerror=rmtree_onerror)
 
 class IonBuild:
     def __init__(self, installer, executable):

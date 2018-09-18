@@ -65,7 +65,7 @@ from docopt import docopt
 
 from amazon.iontest.ion_test_driver_config import TOOL_DEPENDENCIES, ION_BUILDS, ION_IMPLEMENTATIONS, ION_TESTS_SOURCE,\
     RESULTS_FILE_DEFAULT
-from amazon.iontest.ion_test_driver_util import COMMAND_SHELL, log_call
+from amazon.iontest.ion_test_driver_util import COMMAND_SHELL, log_call, rm_tree
 
 
 ION_SUFFIX_TEXT = '.ion'
@@ -148,13 +148,16 @@ class IonResource:
             self.__build_log = os.path.abspath(os.path.join(logs_dir, self.__identifier + '.txt'))
             if not os.path.exists(self._build_dir):
                 shutil.move(tmp_log, self.__build_log)  # This build is being used, overwrite an existing log (if any).
-                shutil.move(tmp_dir, self._build_dir)
+                shutil.copytree(tmp_dir, self._build_dir)
             else:
                 print("%s already present. Using existing source." % self._build_dir)
         finally:
-            shutil.rmtree(tmp_dir_root)
+            os.chdir(self.__output_root)
+            rm_tree(tmp_dir_root)
 
     def install(self):
+        print(ION_BUILDS['ion-c'].execute)
+        print(self._build.execute)
         print('Installing %s revision %s.' % (self._name, self.__revision))
         self.__git_clone_revision()
         os.chdir(self._build_dir)
@@ -180,7 +183,7 @@ class IonImplementation(IonResource):
                 raise ValueError('Implementation %s is not executable.' % self._name)
             self._executable = os.path.abspath(os.path.join(self._build_dir, self._build.execute))
         if not os.path.isfile(self._executable):
-            raise ValueError('Executable for %s does not exist.' % self._name)
+            raise ValueError('Executable for %s does not exist at %s' % (self._name, self._executable))
         _, stderr = Popen((self._executable,) + args, stderr=PIPE, shell=COMMAND_SHELL).communicate()
         return stderr
 
